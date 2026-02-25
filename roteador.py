@@ -14,7 +14,7 @@ class Router:
     Representa um roteador que executa o algoritmo de Vetor de Distância.
     """
 
-    def __init__(self, my_address, neighbors, my_network, update_interval=1):
+    def __init__(self, my_address, neighbors, my_network, update_interval=1, enable_split_horizon=False):
         """
         Inicializa o roteador.
 
@@ -29,6 +29,7 @@ class Router:
         self.neighbors = neighbors
         self.my_network = my_network
         self.update_interval = update_interval
+        self.enable_split_horizon = enable_split_horizon
 
         # TODO: Este é o local para criar e inicializar sua tabela de roteamento.
         #
@@ -235,8 +236,8 @@ class Router:
             tabela_filtrada = {}
 
             for network, info in tabela_para_enviar.items():
-                if info["next_hop"] == neighbor_address:
-                    continue
+                if self.enable_split_horizon and info["next_hop"] == neighbor_address: continue
+
                 tabela_filtrada[network] = info
 
             payload = {
@@ -360,6 +361,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--file', type=str, required=True, help="Arquivo CSV de configuração de vizinhos.")
     parser.add_argument('--network', type=str, required=True, help="Rede administrada por este roteador (ex: 10.0.1.0/24).")
     parser.add_argument('--interval', type=int, default=10, help="Intervalo de atualização periódica em segundos.")
+    parser.add_argument('--split-horizon', action='store_true', help="Habilita Split Horizon para evitar contagem ao infinito")
     args = parser.parse_args()
 
     # Leitura do arquivo de configuração de vizinhos
@@ -388,7 +390,8 @@ if __name__ == '__main__':
         my_address=my_full_address,
         neighbors=neighbors_config,
         my_network=args.network,
-        update_interval=args.interval
+        update_interval=args.interval,
+        enable_split_horizon=args.split_horizon
     )
 
     # Inicia o servidor Flask
